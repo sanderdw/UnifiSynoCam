@@ -15,7 +15,6 @@ import os
 config = configparser.ConfigParser()
 config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
 config.read(config_file)
-
 # Bind variables
 polltime_away = int(config['Logic']['polltime_away'])
 polltime_found = int(config['Logic']['polltime_found'])
@@ -43,9 +42,9 @@ def message(message):
 	return
 
 # -- FUNCTION -- DSM Login
-def dsm_login(user,password):
+def dsm_login():
     conn = http.client.HTTPConnection(dsm_url)
-    conn.request("GET", "/webapi/auth.cgi?api=SYNO.API.Auth&method=Login&version=2&account=" + user + "&passwd=" + password + "&session=SurveillanceStation&format=sid")
+    conn.request("GET", "/webapi/auth.cgi?api=SYNO.API.Auth&method=Login&version=2&account=" + dsm_user + "&passwd=" + dsm_password + "&session=SurveillanceStation&format=sid")
     res = conn.getresponse()
     data = res.read()
     result = json.loads(data.decode("utf-8"))
@@ -125,7 +124,7 @@ def check_unifi(name,resultcookies):
 # Initial Unifi Login
 resultcookies = login_unifi()
 # Initial startup camera
-sid = dsm_login(dsm_user,dsm_password)
+sid = dsm_login()
 dsm_enable_camera(sid)
 dsm_logout(sid)
 
@@ -134,7 +133,7 @@ while True:
 	found = check_unifi(unifi_devicename,resultcookies)
 	resultcookies = found['resultcookies']
 	if (found['row_num'] == '1'):
-		sid = dsm_login(dsm_user,dsm_password)
+		sid = dsm_login()
 		dsm_disable_camera(sid)
 		dsm_logout(sid)
 		message('Phone: ' + unifi_devicename + ', found')
@@ -143,7 +142,7 @@ while True:
 			found = check_unifi(unifi_devicename,resultcookies)
 			resultcookies = found['resultcookies']
 			print('Phone: ' + unifi_devicename + ' still inside')
-		sid = dsm_login(dsm_user,dsm_password)
+		sid = dsm_login()
 		dsm_enable_camera(sid)
 		dsm_logout(sid)
 		message('Phone ' + unifi_devicename + ' has left the building')
