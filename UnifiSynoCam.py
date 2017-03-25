@@ -4,27 +4,31 @@ import json
 import pandas as pd
 import time
 import requests
+
 # Disable the ssl warnings of Unifi
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-# -- GLOBAL -- 
-# Settings Logic
-polltime_away = 600 #Seconds
-polltime_found = 300 #Seconds
-# Settings Unifi
-unifi_user = 'putsomethinghere'
-unifi_password = 'putsomethinghere'
-unifi_devicename = 'putsomethinghere' #Alias in Unifi Controller
-unifi_url = 'https://controller:8443/api'
-# Settings Synology Surveillance Station
-dsm_user = 'putsomethinghere'
-dsm_password = 'putsomethinghere'
-dsm_url = '192.168.100.30:5000'
-# Settings Pushover
-pushover_user = 'putsomethinghere'
-pushover_token = 'putsomethinghere'
-pushover_prefix = 'putsomethinghere - '
+# Import the settings
+import configparser
+import os
+config = configparser.ConfigParser()
+config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
+config.read(config_file)
+
+# Bind variables
+polltime_away = int(config['Logic']['polltime_away'])
+polltime_found = int(config['Logic']['polltime_found'])
+unifi_user = config['Unifi']['unifi_user']
+unifi_password = config['Unifi']['unifi_password']
+unifi_devicename = config['Unifi']['unifi_devicename']
+unifi_url = config['Unifi']['unifi_url']
+dsm_user = config['DSM']['dsm_user']
+dsm_password = config['DSM']['dsm_password']
+dsm_url = config['DSM']['dsm_url']
+pushover_user = config['Pushover']['pushover_user']
+pushover_token = config['Pushover']['pushover_token']
+pushover_prefix = config['Pushover']['pushover_prefix']
 
 # -- FUNCTIONS -- 
 # The Pushover message creator
@@ -120,6 +124,11 @@ def check_unifi(name,resultcookies):
 # -- LOGIC -- Application logic
 # Initial Unifi Login
 resultcookies = login_unifi()
+# Initial startup camera
+sid = dsm_login(dsm_user,dsm_password)
+dsm_enable_camera(sid)
+dsm_logout(sid)
+
 # Loop for checking
 while True:
 	found = check_unifi(unifi_devicename,resultcookies)
