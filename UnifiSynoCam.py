@@ -5,7 +5,7 @@ import pandas as pd
 import time
 import requests
 
-# Disable the ssl warnings of Unifi
+# Disable the ssl warnings of Unifi Controller
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -13,15 +13,19 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 import configparser
 import os
 config = configparser.ConfigParser()
+#config_file = 'config.ini'
 config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
 config.read(config_file)
+
 # Bind variables
 polltime_away = int(config['Logic']['polltime_away'])
 polltime_found = int(config['Logic']['polltime_found'])
 unifi_user = config['Unifi']['unifi_user']
 unifi_password = config['Unifi']['unifi_password']
-unifi_devicename = config['Unifi']['unifi_devicename']
+unifi_devicenames = config['Unifi']['unifi_devicenames'].split(",")
+unifi_devicenames_text = config['Unifi']['unifi_devicenames']
 unifi_url = config['Unifi']['unifi_url']
+unifi_site = config['Unifi']['unifi_site']
 dsm_user = config['DSM']['dsm_user']
 dsm_password = config['DSM']['dsm_password']
 dsm_url = config['DSM']['dsm_url']
@@ -91,33 +95,33 @@ def logout_unifi(resultcookies):
     return
 
 # -- FUNCTION -- The Unifi Controller poller
-def check_unifi(name,resultcookies):
-    url = unifi_url + '/s/default/stat/sta'
-    req = requests.get(url, cookies=resultcookies,verify=False)
+def check_unifi(resultcookies):
+	url = unifi_url + '/s/' + unifi_site + '/stat/sta'
+	req = requests.get(url, cookies=resultcookies,verify=False)
     # If the return status code is 401 mostlikly the login is not valid anymore
-    if (req.status_code == 401):
-        message('Not logged in, statuscode: ' + str(req.status_code))
-        message('Re-Login in progress')
-        time.sleep(30)
-        resultcookies = login_unifi()
-        time.sleep(30)
-        url = unifi_url + '/s/default/stat/sta'
-        req = requests.get(url, cookies=resultcookies,verify=False)
-        message('Current statuscode: ' + str(req.status_code))
-        # Sending raw data to messenger to see if it's working again (dirty)
-        message(req.text)
-    requeststext = req.text
-    result = json.loads(requeststext)
-    result = str(result['data'])
-    result = result.replace("'",'"')
-    result = result.replace("False",'"False"')
-    result = result.replace("True",'"True"')
-    df = pd.read_json(result)
-    result = df[(df.name == name)]
-    row_num = result.shape[0]
-    row_num = str(row_num)
-    return_result = {'row_num': row_num, 'resultcookies': resultcookies}
-    return return_result
+	if (req.status_code == 401):
+		message('Not logged in, statuscode: ' + str(req.status_code))
+		message('Re-Login in progress')
+		resultcookies = login_unifi()
+		time.sleep(30)
+		url = unifi_url + '/s/' + unifi_site + '/stat/sta'
+		req = requests.get(url, cookies=resultcookies,verify=False)
+		message('Current statuscode: ' + str(req.status_code))
+		# Sending raw data to messenger to see if it's working again (dirty)
+		message(req.text)
+	requeststext = req.text
+	result = json.loads(requeststext)
+	result = str(result['data'])
+	# Fix json notation
+	result = result.replace("'",'"')
+	result = result.replace("False",'"False"')
+	result = result.replace("True",'"True"')
+	df = pd.read_json(result)
+	result = df[df['name'].isin(unifi_devicenames)]
+	row_num = result.shape[0]
+	row_num = int(row_num)
+	return_result = {'row_num': row_num, 'resultcookies': resultcookies}
+	return return_result
 # End of functions
 
 # -- LOGIC -- Application logic
@@ -130,22 +134,22 @@ dsm_logout(sid)
 
 # Loop for checking
 while True:
-	found = check_unifi(unifi_devicename,resultcookies)
+	found = check_unifi(resultcookies)
 	resultcookies = found['resultcookies']
-	if (found['row_num'] == '1'):
+	if (found['row_num'] > 0):
+		message(str(found['row_num']) + ' client(s) found (' + unifi_devicenames_text + ')')
 		sid = dsm_login()
 		dsm_disable_camera(sid)
 		dsm_logout(sid)
-		message('Phone: ' + unifi_devicename + ', found')
-		while (found['row_num'] == '1'):
+		while (found['row_num'] > 0):
 			time.sleep(polltime_found)
-			found = check_unifi(unifi_devicename,resultcookies)
+			found = check_unifi(resultcookies)
 			resultcookies = found['resultcookies']
-			print('Phone: ' + unifi_devicename + ' still inside')
+			print(str(found['row_num']) + ' client(s) still inside (' + unifi_devicenames_text + ')')
+		message('Client(s) has left the building (' + unifi_devicenames_text + ')')
 		sid = dsm_login()
 		dsm_enable_camera(sid)
 		dsm_logout(sid)
-		message('Phone ' + unifi_devicename + ' has left the building')
 	else:
-		print('Nothing to do, result: ' + found['row_num'])
+		print('Nothing to do, result: ' + str(found['row_num']))
 	time.sleep(polltime_away)
