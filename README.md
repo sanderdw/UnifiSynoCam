@@ -8,7 +8,6 @@ This script uses the default site in the Unifi controller so it may need a chang
 
 To-Do:
 - Secure connection to DSM
-- Controlling multiple camera's at once
 - Make everything less dirty :)
 
 Push messaging:

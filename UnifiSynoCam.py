@@ -13,8 +13,8 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 import configparser
 import os
 config = configparser.ConfigParser()
-#config_file = 'config.ini'
-config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
+config_file = 'config.ini'
+#config_file = os.path.join(os.path.dirname(__file__), 'config.ini')
 config.read(config_file)
 
 # Bind variables
@@ -29,6 +29,7 @@ unifi_site = config['Unifi']['unifi_site']
 dsm_user = config['DSM']['dsm_user']
 dsm_password = config['DSM']['dsm_password']
 dsm_url = config['DSM']['dsm_url']
+dsm_camera_ids = config['DSM']['dsm_camera_ids']
 pushover_user = config['Pushover']['pushover_user']
 pushover_token = config['Pushover']['pushover_token']
 pushover_prefix = config['Pushover']['pushover_prefix']
@@ -66,7 +67,7 @@ def dsm_logout(sid):
 # -- FUNCTION -- Disable the camera
 def dsm_disable_camera(sid):
 	conn = http.client.HTTPConnection(dsm_url)
-	conn.request("GET", "/webapi/entry.cgi?api=SYNO.SurveillanceStation.Camera&method=Disable&version=9&idList=1&_sid=" + sid)
+	conn.request("GET", "/webapi/entry.cgi?api=SYNO.SurveillanceStation.Camera&method=Disable&version=9&idList="+ dsm_camera_ids +"&_sid=" + sid)
 	res = conn.getresponse()
 	data = res.read()
 	message('Camera disabled: ' + data.decode("utf-8"))
@@ -75,7 +76,7 @@ def dsm_disable_camera(sid):
 # -- FUNCTION -- Enable the camera
 def dsm_enable_camera(sid):
 	conn = http.client.HTTPConnection(dsm_url)
-	conn.request("GET", "/webapi/entry.cgi?api=SYNO.SurveillanceStation.Camera&method=Enable&version=9&idList=1&_sid=" + sid)
+	conn.request("GET", "/webapi/entry.cgi?api=SYNO.SurveillanceStation.Camera&method=Enable&version=9&idList="+ dsm_camera_ids +"&_sid=" + sid)
 	res = conn.getresponse()
 	data = res.read()
 	message('Camera enabled: ' + data.decode("utf-8"))
