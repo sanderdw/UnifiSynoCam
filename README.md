@@ -1,4 +1,5 @@
 # UnifiSynoCam
+Unifi Controller based camera controlling in Synology Surveillance Station.
 
 # Why this project?
 Home security cameras are becoming a more important addition to any household, but they carry the risk of unauthorized access and privacy issues with them. With this in mind, I wanted to switch off my camera's in Synology Surveillance Station when I’m at home and enable them automatically again when I leave. As I didn't find anything useful online and didn't want to install an app (geofencing) on my phone due power usage, I had to find another way.
