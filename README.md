@@ -7,7 +7,7 @@ Home security cameras are becoming a more important addition to any household, b
 I decided to develop my own script and use my Ubiquiti Unifi Controller as a source for the @home indication. This Python3 script uses this indication (polling the active client results) to enable and disable camera(s) in Synology Surveillance Station automatically.
 
 # Configuration
-See the config file. You can specifiy a list of clients and multiple camera id's.
+See the config file. You can specify a list of clients and multiple camera id's.
 
 To-Do:
 - Secure connection to DSM
